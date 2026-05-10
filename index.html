@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>S.T.F.A. Lee Kam Primary School - 英文詞彙温習</title>
+    <title>小一英文詞彙温習遊戲</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&display=swap');
@@ -35,6 +35,391 @@
             transition: transform 0.2s, box-shadow 0.2s;
             display: flex;
             flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 160px;
+        }
+
+        .word-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .letter-block {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 55px;
+            height: 55px;
+            background: #ffffff;
+            border: 3px solid #f59e0b;
+            border-radius: 12px;
+            margin: 4px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #d97706;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 4px 0 #b45309;
+        }
+
+        .letter-block:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        .letter-block.used {
+            opacity: 0.3;
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .slot {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 55px;
+            height: 55px;
+            background: #e5e7eb;
+            border: 3px dashed #9ca3af;
+            border-radius: 12px;
+            margin: 4px;
+            font-size: 28px;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+
+        .slot.filled {
+            background: #dbeafe;
+            border: 3px solid #3b82f6;
+            color: #1e40af;
+            font-weight: bold;
+        }
+
+        .btn-mode {
+            padding: 12px 20px;
+            font-size: 18px;
+            border-radius: 50px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+            font-weight: bold;
+        }
+
+        .btn-mode:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+        }
+
+        .big-emoji {
+            font-size: 80px;
+            margin-bottom: 10px;
+        }
+
+        #hint-text {
+            transition: opacity 0.3s;
+            font-size: 32px;
+            color: #ef4444;
+            height: 40px;
+            margin-bottom: 10px;
+        }
+
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+    </style>
+</head>
+<body class="p-4">
+
+<div id="app" class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <header class="text-center mb-6">
+        <h1 class="text-4xl font-bold text-blue-600 mb-2">English Spelling Fun!</h1>
+        <p class="text-lg text-gray-600">Grade 1 Vocabulary Revision</p>
+        
+        <div class="mt-6 flex flex-wrap justify-center gap-3">
+            <button onclick="switchMode('learn')" id="btn-learn" class="btn-mode bg-blue-500 hover:bg-blue-600">Part 1: Learn</button>
+            <button onclick="switchMode('game')" id="btn-game" class="btn-mode bg-orange-500 hover:bg-orange-600">Part 2: Spelling</button>
+            <button onclick="switchMode('master')" id="btn-master" class="btn-mode bg-purple-600 hover:bg-purple-700">Part 3: Master (Hard)</button>
+        </div>
+    </header>
+
+    <!-- Part 1: Learn Mode -->
+    <div id="mode-learn" class="hidden">
+        <div class="text-center mb-4 text-xl text-blue-800">點擊卡片聽聽發音喔！</div>
+        <div class="card-grid" id="learn-container"></div>
+    </div>
+
+    <!-- Game/Master Mode -->
+    <div id="mode-game" class="hidden text-center">
+        <div class="bg-white p-6 md:p-10 rounded-3xl border-8 border-orange-200 shadow-xl relative">
+            <div id="game-progress" class="mb-2 text-xl font-bold text-orange-600">Word 1 / 10</div>
+            
+            <div id="hint-text" class="opacity-0 font-bold">Word Hint</div>
+            
+            <div id="game-emoji" class="big-emoji">🍎</div>
+            
+            <div id="target-slots" class="mb-6 min-h-[70px] flex flex-wrap justify-center">
+                <!-- Slots -->
+            </div>
+
+            <div id="letter-pool" class="mb-6 flex flex-wrap justify-center">
+                <!-- Letters -->
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-4">
+                <button onclick="resetCurrentWord()" class="bg-gray-400 text-white px-6 py-2 rounded-full text-lg hover:bg-gray-500">Reset 重置</button>
+                <button onclick="showHint()" class="bg-yellow-400 text-white px-6 py-2 rounded-full text-lg hover:bg-yellow-500">Hint 提示</button>
+                <button onclick="nextGameWord()" id="btn-next" class="hidden bg-green-500 text-white px-8 py-2 rounded-full text-xl hover:bg-green-600">Next 下一個!</button>
+            </div>
+            
+            <div class="mt-4 text-sm text-gray-400">提示：點擊空格中的字母可以收回喔！</div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div id="success-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white p-10 rounded-3xl text-center shadow-2xl mx-4">
+        <div class="text-8xl mb-4">🌟</div>
+        <h2 class="text-4xl font-bold text-green-600 mb-4">Well Done!</h2>
+        <p class="text-2xl mb-6">You finished all the words!</p>
+        <button onclick="hideSuccess()" class="bg-blue-500 text-white px-10 py-3 rounded-full text-2xl">Main Menu</button>
+    </div>
+</div>
+
+<script>
+    const vocabData = [
+        { word: "a giant", emoji: "👹", chinese: "巨人" }, { word: "a shopkeeper", emoji: "👨‍💼", chinese: "店主" }, { word: "a man", emoji: "👨", chinese: "男人" }, { word: "people", emoji: "👨‍👩‍👧‍👦", chinese: "人們" },
+        { word: "a train", emoji: "🚂", chinese: "火車" }, { word: "a bridge", emoji: "🌉", chinese: "橋" }, { word: "a house", emoji: "🏠", chinese: "房屋" }, { word: "a door", emoji: "🚪", chinese: "門" },
+        { word: "a table", emoji: "🪑", chinese: "桌子" }, { word: "a window", emoji: "🪟", chinese: "窗戶" }, { word: "a fan", emoji: "🌬️", chinese: "風扇" }, { word: "a tub", emoji: "🛁", chinese: "浴缸" },
+        { word: "a scarf", emoji: "🧣", chinese: "圍巾" }, { word: "an apron", emoji: "🎽", chinese: "圍裙" }, { word: "a lion", emoji: "🦁", chinese: "獅子" }, { word: "a monkey", emoji: "🐒", chinese: "猴子" },
+        { word: "a fly", emoji: "🪰", chinese: "蒼蠅" }, { word: "a butterfly", emoji: "🦋", chinese: "蝴蝶" }, { word: "a cow", emoji: "🐄", chinese: "母牛" }, { word: "a duck", emoji: "🦆", chinese: "鴨子" },
+        { word: "a flower", emoji: "🌻", chinese: "花" }, { word: "a mountain", emoji: "⛰️", chinese: "山" }, { word: "a river", emoji: "🏞️", chinese: "河流" }, { word: "a farm", emoji: "🚜", chinese: "農場" },
+        { word: "a beehive", emoji: "🐝", chinese: "蜂巢" }, { word: "mud", emoji: "💩", chinese: "泥巴" }, { word: "ham", emoji: "🍖", chinese: "火腿" }, { word: "honey", emoji: "🍯", chinese: "蜂蜜" },
+        { word: "vegetables", emoji: "🥦", chinese: "蔬菜" }, { word: "catch", emoji: "🧤", chinese: "捉" }, { word: "jump", emoji: "🦘", chinese: "跳" }, { word: "paddle", emoji: "🛶", chinese: "划" },
+        { word: "smart", emoji: "💡", chinese: "聰明" }, { word: "lovely", emoji: "💖", chinese: "可愛" }, { word: "hungry", emoji: "🍔", chinese: "飢餓" }, { word: "thirsty", emoji: "🧃", chinese: "口渴" },
+        { word: "afraid", emoji: "😨", chinese: "害怕" }, { word: "eleven", emoji: "1️⃣1️⃣", chinese: "十一" }, { word: "twelve", emoji: "1️⃣2️⃣", chinese: "十二" }, { word: "fifteen", emoji: "1️⃣5️⃣", chinese: "十五" }
+    ];
+
+    let currentMode = 'learn';
+    let gameQueue = [];
+    let currentGameIndex = 0;
+    let currentWordObj = null;
+
+    window.onload = () => {
+        renderLearnMode();
+        switchMode('learn');
+    };
+
+    function switchMode(mode) {
+        currentMode = mode;
+        document.getElementById('mode-learn').classList.add('hidden');
+        document.getElementById('mode-game').classList.add('hidden');
+        
+        if (mode === 'learn') {
+            document.getElementById('mode-learn').classList.remove('hidden');
+        } else {
+            document.getElementById('mode-game').classList.remove('hidden');
+            startNewGame();
+        }
+    }
+
+    function renderLearnMode() {
+        const container = document.getElementById('learn-container');
+        container.innerHTML = '';
+        vocabData.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'word-card';
+            card.innerHTML = `
+                <div class="text-5xl mb-2">${item.emoji}</div>
+                <div class="text-2xl font-bold text-blue-700 comic-text leading-tight">${item.word}</div>
+                <div class="text-xs text-gray-500 mt-1 font-sans">${item.chinese}</div>
+            `;
+            card.onclick = () => speak(item.word);
+            container.appendChild(card);
+        });
+    }
+
+    function speak(text) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance();
+        msg.text = text;
+        msg.lang = 'en-US';
+        msg.rate = 0.8;
+        window.speechSynthesis.speak(msg);
+    }
+
+    function startNewGame() {
+        gameQueue = [...vocabData].sort(() => Math.random() - 0.5).slice(0, 10);
+        currentGameIndex = 0;
+        loadWord();
+    }
+
+    function loadWord() {
+        currentWordObj = gameQueue[currentGameIndex];
+        document.getElementById('game-progress').innerText = `${currentMode === 'master' ? 'Spelling Master' : 'Spelling Game'} - ${currentGameIndex + 1} / 10`;
+        document.getElementById('game-emoji').innerText = currentWordObj.emoji;
+        document.getElementById('btn-next').classList.add('hidden');
+        document.getElementById('hint-text').classList.add('opacity-0');
+        
+        if (currentMode === 'master') {
+            speak(currentWordObj.word);
+        }
+
+        const cleanWord = currentWordObj.word.toLowerCase();
+        const slotContainer = document.getElementById('target-slots');
+        slotContainer.innerHTML = '';
+        
+        for (let char of cleanWord) {
+            if (char === ' ') {
+                const space = document.createElement('span');
+                space.style.display = 'inline-block';
+                space.style.width = '20px';
+                slotContainer.appendChild(space);
+            } else {
+                const slot = document.createElement('div');
+                slot.className = 'slot';
+                slot.onclick = () => handleSlotClick(slot);
+                slotContainer.appendChild(slot);
+            }
+        }
+
+        const pool = document.getElementById('letter-pool');
+        pool.innerHTML = '';
+        let poolLetters = cleanWord.replace(/ /g, '').split('');
+        
+        if (currentMode === 'master') {
+            const alphabet = "abcdefghijklmnopqrstuvwxyz";
+            for (let i = 0; i < 3; i++) {
+                poolLetters.push(alphabet[Math.floor(Math.random() * alphabet.length)]);
+            }
+        }
+        
+        poolLetters.sort(() => Math.random() - 0.5);
+        
+        poolLetters.forEach((char) => {
+            const block = document.createElement('div');
+            block.className = 'letter-block comic-text';
+            block.innerText = char;
+            block.onclick = () => handleLetterClick(char, block);
+            pool.appendChild(block);
+        });
+    }
+
+    function handleLetterClick(char, blockEl) {
+        const slots = document.querySelectorAll('.slot');
+        let targetSlot = null;
+        for (let s of slots) {
+            if (s.innerText === '') {
+                targetSlot = s;
+                break;
+            }
+        }
+
+        if (targetSlot) {
+            targetSlot.innerText = char;
+            targetSlot.classList.add('filled');
+            targetSlot.linkedBlock = blockEl; // Store reference to block
+            blockEl.classList.add('used');
+            checkWin();
+        }
+    }
+
+    function handleSlotClick(slotEl) {
+        if (slotEl.innerText !== '' && !document.getElementById('btn-next').classList.contains('hidden')) {
+            // Already correct and next button shown, don't allow changes
+            return;
+        }
+
+        if (slotEl.innerText !== '') {
+            const blockEl = slotEl.linkedBlock;
+            if (blockEl) {
+                blockEl.classList.remove('used');
+            }
+            slotEl.innerText = '';
+            slotEl.classList.remove('filled');
+            slotEl.linkedBlock = null;
+        }
+    }
+
+    function showHint() {
+        const hint = document.getElementById('hint-text');
+        hint.innerText = currentWordObj.word;
+        hint.classList.remove('opacity-0');
+        speak(currentWordObj.word);
+        setTimeout(() => {
+            hint.classList.add('opacity-0');
+        }, 1500);
+    }
+
+    function resetCurrentWord() {
+        loadWord();
+    }
+
+    function checkWin() {
+        const slots = document.querySelectorAll('.slot');
+        const cleanWord = currentWordObj.word.toLowerCase().replace(/ /g, '');
+        
+        let allFilled = true;
+        let builtWord = "";
+        
+        slots.forEach(s => {
+            builtWord += s.innerText;
+            if (s.innerText === '') allFilled = false;
+        });
+
+        if (allFilled) {
+            if (builtWord === cleanWord) {
+                speak(currentWordObj.word);
+                document.getElementById('btn-next').classList.remove('hidden');
+                slots.forEach(s => {
+                    s.classList.replace('border-blue-400', 'border-green-500');
+                    s.classList.add('bg-green-100');
+                });
+            } else {
+                const container = document.getElementById('target-slots');
+                container.classList.add('shake');
+                slots.forEach(s => s.classList.add('border-red-500'));
+                
+                setTimeout(() => {
+                    container.classList.remove('shake');
+                    slots.forEach(s => s.classList.remove('border-red-500'));
+                }, 800);
+            }
+        }
+    }
+
+    function nextGameWord() {
+        currentGameIndex++;
+        if (currentGameIndex < gameQueue.length) {
+            loadWord();
+        } else {
+            showSuccess();
+        }
+    }
+
+    function showSuccess() {
+        document.getElementById('success-overlay').classList.remove('hidden');
+    }
+
+    function hideSuccess() {
+        document.getElementById('success-overlay').classList.add('hidden');
+        switchMode('learn');
+    }
+</script>
+
+</body>
+</html>            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 160px;
